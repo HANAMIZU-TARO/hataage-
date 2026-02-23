@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>あかいろ・しろいろ はたあげ！</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            user-select: none;
+            touch-action: manipulation;
+            background-color: #FFF9E6;
+            font-family: 'Zen Maru Gothic', sans-serif;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -200%) scale(2.5); }
+        }
+        .floater {
+            animation: floatUp 0.8s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        }
+
+        @keyframes girlJump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        .animate-girl-idle {
+            animation: girlJump 2s ease-in-out infinite;
+        }
+
+        .flag-transition {
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: bottom center;
+        }
+        .flag-hidden { transform: scaleY(0); }
+        .flag-shown { transform: scaleY(1); }
+
+        .btn-pop {
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn-pop:active {
+            transform: scale(0.85) translateY(8px);
+            box-shadow: none !important;
+        }
+
+        @keyframes softPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+        .animate-soft-pulse {
+            animation: softPulse 1.5s ease-in-out infinite;
+        }
+
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-[100dvh] sm:p-4 overflow-hidden touch-none">
+
+    <div id="gameContainer" class="relative w-full sm:max-w-md h-[100dvh] sm:h-[850px] sm:max-h-[95dvh] bg-white sm:rounded-[50px] shadow-2xl overflow-hidden flex flex-col sm:border-[10px] border-yellow-300">
+        
+        <!-- === タイトル画面 === -->
+        <div id="screen-title" class="absolute inset-0 bg-sky-400 flex flex-col items-center justify-center text-white z-50 p-6">
+            <div class="animate-girl-idle mb-6 relative">
+                <svg width="220" height="220" viewBox="0 0 200 200">
+                    <circle cx="100" cy="55" r="40" fill="#FCD34D" />
+                    <circle cx="100" cy="65" r="32" fill="#FFEDD5" />
+                    <circle cx="85" cy="65" r="3" fill="#1F2937" />
+                    <circle cx="115" cy="65" r="3" fill="#1F2937" />
+                    <path d="M 85 80 Q 100 95 115 80" stroke="#FF9999" stroke-width="4" fill="transparent" stroke-linecap="round" />
+                    <path d="M 100 90 L 60 190 L 140 190 Z" fill="#F472B6" />
+                    <g style="animation: softPulse 1.5s infinite">
+                        <line x1="75" y1="105" x2="40" y2="55" stroke="#FFEDD5" stroke-width="10" stroke-linecap="round" />
+                        <rect x="0" y="10" width="50" height="35" fill="#EF4444" rx="8" />
+                    </g>
+                    <g style="animation: softPulse 1.5s infinite reverse">
+                        <line x1="125" y1="105" x2="160" y2="55" stroke="#FFEDD5" stroke-width="10" stroke-linecap="round" />
+                        <rect x="150" y="10" width="50" height="35" fill="#FFFFFF" rx="8" stroke="#DDD" stroke-width="2" />
+                    </g>
+                </svg>
+            </div>
+            <div class="text-center">
+                <h1 class="text-6xl font-black mb-4 text-yellow-300 drop-shadow-[0_6px_0_rgba(0,0,0,0.1)] tracking-tighter">
+                    はたあげ！<br>どっちかな？
+                </h1>
+                <p class="text-sky-100 mb-12 text-2xl font-bold">れんだで　あそぼう！</p>
+            </div>
+            <button onclick="initAudio(); showScreen('menu');" class="animate-soft-pulse bg-yellow-400 text-yellow-900 font-black text-4xl py-6 px-20 rounded-full shadow-[0_12px_0_#D97706] active:translate-y-[8px] active:shadow-none transition-all">
+                あそぶ！
+            </button>
+        </div>
+
+        <!-- === メニュー画面 === -->
+        <div id="screen-menu" class="absolute inset-0 bg-yellow-50 flex flex-col items-center z-40 hidden p-6 safe-top">
+            <div class="mt-16 text-center">
+                <h2 class="text-4xl font-black text-orange-500 mb-2">どれに する？</h2>
+            </div>
+            
+            <div class="w-full space-y-8 flex-grow flex flex-col justify-center max-w-[320px]">
+                <button onclick="prepareGame('easy')" class="btn-pop w-full bg-green-400 p-6 rounded-[40px] shadow-[0_10px_0_#166534] flex items-center justify-between text-white border-4 border-green-300">
+                    <div class="text-left">
+                        <div class="text-3xl font-black">かんたん</div>
+                        <div class="text-sm font-bold mt-1">きろく:<span id="hs-easy">0</span></div>
+                    </div>
+                    <span class="text-6xl">🐣</span>
+                </button>
+
+                <button onclick="prepareGame('normal')" class="btn-pop w-full bg-sky-400 p-6 rounded-[40px] shadow-[0_10px_0_#0369A1] flex items-center justify-between text-white border-4 border-sky-300">
+                    <div class="text-left">
+                        <div class="text-3xl font-black">ふつう</div>
+                        <div class="text-sm font-bold mt-1">きろく:<span id="hs-normal">0</span></div>
+                    </div>
+                    <span class="text-6xl">🐱</span>
+                </button>
+
+                <button onclick="prepareGame('hard')" class="btn-pop w-full bg-rose-400 p-6 rounded-[40px] shadow-[0_10px_0_#9F1239] flex items-center justify-between text-white border-4 border-rose-300">
+                    <div class="text-left">
+                        <div class="text-3xl font-black">むずかしい</div>
+                        <div class="text-sm font-bold mt-1">きろく:<span id="hs-hard">0</span></div>
+                    </div>
+                    <span class="text-6xl">🦁</span>
+                </button>
+            </div>
+
+            <button onclick="showScreen('title')" class="mb-12 w-20 h-20 bg-white rounded-full shadow-xl flex items-center justify-center border-8 border-yellow-200 active:scale-90 transition-all">
+                <span class="text-4xl">🏠</span>
+            </button>
+        </div>
+
+        <!-- === ゲームプレイ画面 === -->
+        <div id="screen-game" class="flex flex-col h-full hidden">
+            <!-- ヘッダー -->
+            <div class="bg-white p-4 pt-[calc(1rem+env(safe-area-inset-top))] flex justify-between items-center z-10 border-b-8 border-yellow-100">
+                <div class="bg-sky-100 px-6 py-3 rounded-3xl">
+                    <p class="text-3xl font-black text-sky-700 leading-none"><span id="score">0</span><span class="text-lg ml-1">てん</span></p>
+                </div>
+                <div class="bg-rose-100 px-8 py-3 rounded-3xl text-center">
+                    <p class="text-4xl font-black text-rose-700 leading-none font-mono" id="timeDisplay">10.0</p>
+                </div>
+            </div>
+
+            <!-- キャラクター表示エリア -->
+            <div class="flex-grow flex items-center justify-center relative bg-sky-50/30 overflow-hidden">
+                <svg width="100%" height="100%" style="max-width: 320px; max-height: 320px;" viewBox="0 0 200 200" class="z-10 drop-shadow-2xl" id="girlSvg">
+                    <path d="M 100 90 L 60 190 L 140 190 Z" fill="#F472B6" />
+                    <circle cx="100" cy="55" r="40" fill="#FCD34D" />
+                    <circle cx="100" cy="65" r="32" fill="#FFEDD5" />
+                    <g id="faceNormal">
+                        <circle cx="85" cy="65" r="3" fill="#1F2937" />
+                        <circle cx="115" cy="65" r="3" fill="#1F2937" />
+                        <path d="M 92 80 Q 100 88 108 80" stroke="#FF9999" stroke-width="4" fill="transparent" stroke-linecap="round" />
+                    </g>
+                    <g id="faceSurprised" class="hidden">
+                        <circle cx="85" cy="65" r="4" fill="#1F2937" />
+                        <circle cx="115" cy="65" r="4" fill="#1F2937" />
+                        <circle cx="100" cy="85" r="8" fill="#1F2937" />
+                    </g>
+                    <g id="idleArms">
+                        <line x1="75" y1="105" x2="60" y2="140" stroke="#FFEDD5" stroke-width="14" stroke-linecap="round" />
+                        <line x1="125" y1="105" x2="140" y2="140" stroke="#FFEDD5" stroke-width="14" stroke-linecap="round" />
+                    </g>
+                    <g id="redArmGroup" class="flag-transition flag-hidden">
+                        <line x1="75" y1="105" x2="40" y2="60" stroke="#FFEDD5" stroke-width="14" stroke-linecap="round" />
+                        <rect x="0" y="15" width="50" height="35" fill="#EF4444" rx="10" />
+                        <line x1="40" y1="15" x2="40" y2="75" stroke="#78350F" stroke-width="6" stroke-linecap="round" />
+                    </g>
+                    <g id="whiteArmGroup" class="flag-transition flag-hidden">
+                        <line x1="125" y1="105" x2="160" y2="60" stroke="#FFEDD5" stroke-width="14" stroke-linecap="round" />
+                        <rect x="150" y="15" width="50" height="35" fill="#FFFFFF" rx="10" stroke="#DDD" stroke-width="2" />
+                        <line x1="160" y1="15" x2="160" y2="75" stroke="#78350F" stroke-width="6" stroke-linecap="round" />
+                    </g>
+                </svg>
+            </div>
+
+            <!-- ボタン -->
+            <div class="bg-white p-8 pb-[calc(2.5rem+env(safe-area-inset-bottom))] flex justify-around items-center rounded-t-[50px] shadow-[0_-15px_30px_rgba(0,0,0,0.05)] z-10 border-t-8 border-yellow-100">
+                <button id="btnRed" class="btn-pop w-32 h-32 rounded-full bg-rose-500 shadow-[0_14px_0_#9F1239] flex flex-col items-center justify-center border-4 border-rose-400 outline-none">
+                    <span class="text-white font-black text-4xl">あか</span>
+                </button>
+                <button id="btnWhite" class="btn-pop w-32 h-32 rounded-full bg-white shadow-[0_14px_0_#E5E7EB] flex flex-col items-center justify-center border-4 border-gray-100 outline-none">
+                    <span class="text-gray-800 font-black text-4xl">しろ</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- === リザルト画面 === -->
+        <div id="screen-over" class="absolute inset-0 bg-sky-500/95 backdrop-blur-md flex flex-col items-center justify-center text-white z-[60] hidden px-6">
+            <h2 class="text-6xl font-black mb-6 text-yellow-300 drop-shadow-md">おしまい！</h2>
+            <div class="bg-white/30 p-8 rounded-[40px] w-full max-w-[300px] text-center mb-10 border-4 border-white/20">
+                <p class="text-2xl font-bold mb-2" id="finalDifficultyLabel">ふつうコース</p>
+                <p class="text-8xl font-black text-white" id="finalScore">0</p>
+                <p class="text-2xl font-bold mt-2">てん</p>
+            </div>
+            
+            <div id="newRecordBadge" class="hidden bg-yellow-400 text-yellow-900 font-black px-8 py-3 rounded-full mb-10 text-3xl animate-bounce border-4 border-yellow-200">
+                👑 しんきろく！ 👑
+            </div>
+
+            <div class="flex flex-col gap-6 w-full max-w-[260px]">
+                <button onclick="startGame()" class="btn-pop bg-yellow-400 text-yellow-900 font-black text-3xl py-6 rounded-full shadow-[0_10px_0_#D97706] border-4 border-yellow-300">
+                    もういっかい！
+                </button>
+                <button onclick="showScreen('menu')" class="btn-pop bg-white text-sky-600 font-black text-2xl py-4 rounded-full shadow-[0_8px_0_#CBD5E1]">
+                    もどる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /** === ゲームパラメータの管理 === **/
+        const GAME_PARAMS = {
+            TIME_LIMIT: 10.0,
+            POINTS: {
+                SUCCESS: 10,
+                PENALTY: 5
+            },
+            // 各難易度の速度設定（ミリ秒）
+            LEVELS: {
+                easy: {
+                    startMin: 1200, startMax: 1800, 
+                    endMin: 700, endMax: 1200
+                },
+                normal: {
+                    startMin: 800, startMax: 1400, 
+                    endMin: 400, endMax: 800
+                },
+                hard: {
+                    startMin: 600, startMax: 1000, 
+                    endMin: 300, endMax: 500  // 超高速すぎないよう下限を設定
+                }
+            }
+        };
+
+        /** === サウンド管理（Web Audio API） === **/
+        let audioCtx = null;
+        let bgmInterval = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(freq, type, duration, vol = 0.1) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freq / 2, audioCtx.currentTime + duration);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // 成功音（ピコーン！）
+        function playSuccess() {
+            playSound(880, 'sine', 0.2, 0.2);
+            setTimeout(() => playSound(1320, 'sine', 0.2, 0.2), 50);
+        }
+
+        // 失敗音（ブブー）
+        function playFail() {
+            playSound(150, 'sawtooth', 0.4, 0.15);
+        }
+
+        // 簡易BGM（ポコポコメロディ）
+        function startBGM() {
+            stopBGM();
+            const melody = [261.63, 329.63, 392.00, 523.25];
+            let i = 0;
+            bgmInterval = setInterval(() => {
+                if (!isPlaying) return;
+                playSound(melody[i % melody.length], 'triangle', 0.3, 0.05);
+                i++;
+            }, 400);
+        }
+
+        function stopBGM() {
+            if (bgmInterval) clearInterval(bgmInterval);
+        }
+
+        /** === 状態管理 === **/
+        let score = 0;
+        let timeLeft = GAME_PARAMS.TIME_LIMIT;
+        let isPlaying = false;
+        let currentDifficulty = 'normal';
+        let currentFlag = null;
+        let timerInterval, flagTimeout;
+
+        const highScores = {
+            easy: localStorage.getItem('akashiro_v3_easy') || 0,
+            normal: localStorage.getItem('akashiro_v3_normal') || 0,
+            hard: localStorage.getItem('akashiro_v3_hard') || 0
+        };
+
+        const screens = {
+            title: document.getElementById('screen-title'),
+            menu: document.getElementById('screen-menu'),
+            game: document.getElementById('screen-game'),
+            over: document.getElementById('screen-over')
+        };
+
+        const scoreDisplay = document.getElementById('score');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const hsDisplays = {
+            easy: document.getElementById('hs-easy'),
+            normal: document.getElementById('hs-normal'),
+            hard: document.getElementById('hs-hard')
+        };
+
+        updateHSDisplays();
+
+        /** === 画面遷移 === **/
+        function showScreen(screenKey) {
+            Object.values(screens).forEach(s => s.classList.add('hidden'));
+            screens[screenKey].classList.remove('hidden');
+            if (screenKey === 'menu') updateHSDisplays();
+        }
+
+        function prepareGame(difficulty) {
+            currentDifficulty = difficulty;
+            const labels = { easy: 'かんたん', normal: 'ふつう', hard: 'むずかしい' };
+            document.getElementById('finalDifficultyLabel').textContent = labels[difficulty] + ' コース';
+            showScreen('game');
+            startGame();
+        }
+
+        function updateHSDisplays() {
+            Object.keys(highScores).forEach(key => {
+                if(hsDisplays[key]) hsDisplays[key].textContent = highScores[key];
+            });
+        }
+
+        /** === ゲームロジック === **/
+        function startGame() {
+            score = 0;
+            timeLeft = GAME_PARAMS.TIME_LIMIT;
+            isPlaying = true;
+            currentFlag = null;
+            
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = timeLeft.toFixed(1);
+            timeDisplay.classList.remove('text-rose-500');
+            screens.over.classList.add('hidden');
+            document.getElementById('newRecordBadge').classList.add('hidden');
+            
+            updateVisuals();
+            startBGM();
+
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.1;
+                if (timeLeft <= 0) {
+                    timeLeft = 0;
+                    endGame();
+                }
+                timeDisplay.textContent = timeLeft.toFixed(1);
+                if (timeLeft <= 3.0) timeDisplay.classList.add('text-rose-500');
+            }, 100);
+
+            scheduleNextFlag();
+        }
+
+        function scheduleNextFlag() {
+            if (!isPlaying) return;
+
+            const progress = (GAME_PARAMS.TIME_LIMIT - timeLeft) / GAME_PARAMS.TIME_LIMIT;
+            const cfg = GAME_PARAMS.LEVELS[currentDifficulty];
+            
+            const minDelay = cfg.startMin - (progress * (cfg.startMin - cfg.endMin));
+            const maxDelay = cfg.startMax - (progress * (cfg.startMax - cfg.endMax));
+
+            const delay = Math.max(cfg.endMin, Math.random() * (maxDelay - minDelay) + minDelay);
+            changeFlag();
+            flagTimeout = setTimeout(scheduleNextFlag, delay);
+        }
+
+        function changeFlag() {
+            const colors = ['red', 'white'];
+            currentFlag = colors[Math.floor(Math.random() * colors.length)];
+            updateVisuals();
+        }
+
+        function updateVisuals() {
+            const redArm = document.getElementById('redArmGroup');
+            const whiteArm = document.getElementById('whiteArmGroup');
+            const idleArms = document.getElementById('idleArms');
+            const faceNormal = document.getElementById('faceNormal');
+            const faceSurprised = document.getElementById('faceSurprised');
+
+            if (currentFlag === 'red') {
+                redArm.classList.replace('flag-hidden', 'flag-shown');
+                whiteArm.classList.replace('flag-shown', 'flag-hidden');
+            } else if (currentFlag === 'white') {
+                whiteArm.classList.replace('flag-hidden', 'flag-shown');
+                redArm.classList.replace('flag-shown', 'flag-hidden');
+            } else {
+                redArm.classList.replace('flag-shown', 'flag-hidden');
+                whiteArm.classList.replace('flag-shown', 'flag-hidden');
+            }
+
+            idleArms.style.opacity = currentFlag === null ? "1" : "0.2";
+            faceNormal.classList.remove('hidden');
+            faceSurprised.classList.add('hidden');
+        }
+
+        function handleMash(color, event) {
+            if (!isPlaying) return;
+
+            // 振動（バイブレーション）
+            if ("vibrate" in navigator) {
+                navigator.vibrate(currentFlag === color ? 30 : [50, 30, 50]);
+            }
+
+            if (currentFlag === color) {
+                score += GAME_PARAMS.POINTS.SUCCESS;
+                playSuccess();
+                showEffect('＋10', color, true, event);
+            } else {
+                score = Math.max(0, score - GAME_PARAMS.POINTS.PENALTY);
+                playFail();
+                showEffect('×', color, false, event);
+                document.getElementById('faceNormal').classList.add('hidden');
+                document.getElementById('faceSurprised').classList.remove('hidden');
+                setTimeout(() => { if(isPlaying) updateVisuals(); }, 300);
+            }
+            scoreDisplay.textContent = score;
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            clearTimeout(flagTimeout);
+            stopBGM();
+            currentFlag = null;
+            updateVisuals();
+
+            if (score > highScores[currentDifficulty]) {
+                highScores[currentDifficulty] = score;
+                localStorage.setItem(`akashiro_v3_${currentDifficulty}`, score);
+                document.getElementById('newRecordBadge').classList.remove('hidden');
+            }
+
+            finalScoreDisplay.textContent = score;
+            screens.over.classList.remove('hidden');
+        }
+
+        function showEffect(text, color, isSuccess, event) {
+            const floater = document.createElement('div');
+            floater.textContent = text;
+            floater.className = `absolute font-black text-6xl pointer-events-none z-[70] floater ${isSuccess ? (color === 'red' ? 'text-rose-500' : 'text-gray-400') : 'text-sky-500'}`;
+            
+            const rect = document.getElementById('gameContainer').getBoundingClientRect();
+            const clientX = event.clientX || (event.touches && event.touches[0].clientX);
+            const clientY = event.clientY || (event.touches && event.touches[0].clientY);
+            const x = (clientX || rect.width / 2) - rect.left;
+            const y = (clientY || rect.height / 2) - rect.top;
+
+            floater.style.left = `${x}px`;
+            floater.style.top = `${y}px`;
+            document.getElementById('gameContainer').appendChild(floater);
+            setTimeout(() => floater.remove(), 800);
+        }
+
+        const addMashListener = (id, color) => {
+            const btn = document.getElementById(id);
+            btn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                handleMash(color, e);
+            });
+        };
+
+        addMashListener('btnRed', 'red');
+        addMashListener('btnWhite', 'white');
+
+    </script>
+</body>
+</html>
